@@ -1,0 +1,48 @@
+- name: Update and upgrade apt packages
+  ansible.builtin.package:
+        name: "*"
+        state: latest
+- name: Install git
+  ansible.builtin.package:
+        name: git
+        state: present
+- name: Download script
+  ansible.legacy.shell: wget https://rpm.nodesource.com/setup_23.x
+- name: Run a script with arguments
+  command: bash /root/setup_23.x
+- name: Install nodejs
+  ansible.builtin.package:
+         name: nodejs
+         state: present
+- name: Vérifier si le dossier quiz-ansible existe
+  ansible.builtin.stat:
+        path: /root/quiz-ansible
+  register: projet
+
+- name: Cloner le dépôt Git uniquemens'il n'existe pas encore
+  ansible.builtin.git:
+        repo: https://github.com/Freaked-Dude/MotherOfAllPhishing.git
+        dest: /root/quiz-ansible
+  when: not projet.stat.exists
+
+- name: Installer les dépendances Node.js (équivalent de npm install)
+  community.general.npm:
+        path: /root/quiz-ansible
+- name: Lancer la compilation du projet (npm run build)
+  ansible.builtin.shell: "npm run build"
+  args:
+        chdir: /root/quiz-ansible
+
+- name: Installer serve 
+  community.general.npm:
+        name: serve
+        global: true
+        state: present
+- name: Lancer le serveur statique avec serve en tâche de fond
+  ansible.builtin.shell: "serve -s dist"
+  args:
+        chdir: /root/quiz-ansible
+  async: 3600
+  poll: 0
+
+
